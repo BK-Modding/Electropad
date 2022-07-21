@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Untitled - Notepad</title>
+
+    <style type="text/css">
+        body {
+            width: 99vw;
+            height: 97vh;
+            margin: 0;
+        }
+
+        /* #editor {
+            box-sizing: border-box;
+            height: 100%;
+        } */
+        textarea {
+            width: 100%;
+            height: 100%;
+            font-family: Consolas, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace;
+            font-style: normal;
+            font-size: 11pt;
+            border: none;
+            outline: none;
+        }
+
+        textarea:focus {
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+    <textarea name="" id="editor"></textarea>
+    <script>
+        const { ipcRenderer } = require("electron");
+    </script>
+</body>
+
+</html>
