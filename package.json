@@ -1,0 +1,23 @@
+{
+  "name": "notepad_2.0",
+  "version": "1.0.0",
+  "description": "Electron clone of the Windows Notepad application.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BK-Modding/Notepad-2.0.git"
+  },
+  "author": "BK-Modding",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/BK-Modding/Notepad-2.0/issues"
+  },
+  "homepage": "https://github.com/BK-Modding/Notepad-2.0#readme",
+  "devDependencies": {
+    "electron": "^19.0.8"
+  }
+}
