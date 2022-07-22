@@ -1,7 +1,6 @@
 const path = require('path');
 
 const { BrowserWindow } = require('electron');
-const { generateMainMenu } = require('./menu');
 
 const createWindow = (windows, menuOption) => {
     let newWindow = new BrowserWindow({
@@ -24,11 +23,18 @@ const createWindow = (windows, menuOption) => {
         newWindow.setMenu(generateMainMenu(windows));
     }
 
-    windows.add(newWindow);
+    // newWindow.webContents.on('before-input-event', (event, input) => {
+    //     if (input.control && input.key.toLowerCase() === 'w') {
+    //         console.log('Pressed Control+W');
+    //     }
+    // });
 
+    windows.add(newWindow);
     return newWindow;
 }
 
 module.exports = {
     createWindow
 }
+
+const { generateMainMenu } = require('./menu'); // circular dependency pattern needs import of codependency after export declaration

@@ -1,6 +1,6 @@
 const path = require('path');
 
-const { app } = require('electron');
+const { app, globalShortcut } = require('electron');
 
 const { createWindow } = require('./modules/operations')
 
@@ -12,6 +12,14 @@ const windows = new Set();
 app.on('ready', () => {
     createWindow(windows, false);
     createWindow(windows, true);
+
+    // const exit = globalShortcut.register('CommandOrControl+W', () => {
+        
+    // });
+
+    // if (!exit)
+    //     console.log("Registration failed");
+
 });
 
 app.on('window-all-closed', () => {

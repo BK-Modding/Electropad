@@ -2,8 +2,6 @@ const { Menu } = require('electron');
 
 const { createWindow } = require('./operations');
 
-console.log(require('./operations.js'))
-
 const generateMainMenu = (windows) => {
     const mainMenuTemplate = [
         {
@@ -19,6 +17,10 @@ const generateMainMenu = (windows) => {
                     click() {
                         createWindow(windows, true);
                     }
+                },
+                { type: 'separator' },
+                {
+                    role: 'close'
                 }
             ]
         }
