@@ -3,15 +3,22 @@ const fs = require('fs');
 
 const { dialog } = require('electron');
 
-const saveFile = (currentWindow, savedPath) => {
-    let savedFileName = path.basename(savedPath, path.extname(savedPath));
+const nameFromPath = (filepath) => {
+    // const nameWithExt = path.basename(filepath);
+    // const ext = path.extname(filepath);
+    // const filename = path.basename(nameWithExt, ext);
+    // return filename;
 
+    return path.basename(filepath, path.extname(filepath))
+}
+
+const saveFile = (currentWindow, savedPath) => {
     currentWindow.webContents.executeJavaScript('document.getElementById("editor").value', true).then(textData => {
         fs.writeFile(savedPath, textData, (err) => {
             if (err) throw err;
 
             console.log("Saved!");
-            currentWindow.webContents.send("file:saved", savedFileName, savedPath);
+            currentWindow.webContents.send("file:saved", savedPath);
         });
     });
 }
@@ -49,13 +56,11 @@ const saveFileHandler = (currentWindow, saveAsFlag) => {
 }
 
 const openFile = (currentWindow, openPath) => {
-    let openFileName = path.basename(openPath, path.extname(openPath));
-
     fs.readFile(openPath, 'utf8', (err, content) => {
         if (err) throw err;
 
         console.log("Opened!");
-        currentWindow.webContents.send('file:open', openFileName, openPath, content);
+        currentWindow.webContents.send('file:open', openPath, content);
     });
 }
 
@@ -90,5 +95,6 @@ const openFileHandler = (currentWindow) => {
 
 module.exports = {
     saveFileHandler,
-    openFileHandler
+    openFileHandler,
+    nameFromPath
 }

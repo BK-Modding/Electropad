@@ -1,48 +1,28 @@
-// window.addEventListener('keydown', (event) => {
-//     console.log(event.key);
-// }, true);
-
 const { ipcRenderer, session } = require('electron');
 
 let titleElement = document.getElementById('filename');
 let editorElement = document.getElementById('editor');
 
-function getNameFromPath(filepath) {
-    // let filename = ipcRenderer.sendSync('get-filename', filepath);
-    // return filename;
-    // Dont do this, it blocks render and slows things down
+const setModified = (value) => {
+    sessionStorage.setItem("modified", value);
 }
 
-ipcRenderer.on('file:saved', (event, filename, filepath) => {
-    setFileName(filename, filepath);
-});
-
-ipcRenderer.on('file:open', (event, filename, filepath, content) => {
-    setFileName(filename, filepath);
-    setTextContent(content);
-});
-
-function setFileName(filename, filepath) {
+function setFile(filepath) {
     let formatTitle = (filename) => `${filename} - Notepad`;
 
-    if (!filename) {
-        sessionStorage.setItem('filename', formatTitle('Untitled'));
+    if (!filepath) {
+        titleElement.textContent = formatTitle('Untitled');
     } else {
-        console.log("Filename:", getNameFromPath(filepath));
-        
-        sessionStorage.setItem('filename', formatTitle(filename));
-        sessionStorage.setItem('filepath', filepath);
+        ipcRenderer.invoke('file:name', filepath).then(filename => {
+            titleElement.textContent = formatTitle(filename);
+            sessionStorage.setItem('filepath', filepath);
+        });
     }
-
-    titleElement.textContent = sessionStorage.getItem('filename');
-}
-
-function setTextContent(content) {
-    editorElement.textContent = content;
+    setModified(false);
 }
 
 document.addEventListener('DOMContentLoaded', (event) => {
-    setFileName();
+    setFile();
 });
 
 editorElement.addEventListener('input', (event) => {
@@ -51,8 +31,19 @@ editorElement.addEventListener('input', (event) => {
     if (!editorElement.value) {
         if (title.startsWith('*')) 
             titleElement.textContent = title.split('*')[1];
+        setModified(false);
     } else {
         if (!title.startsWith('*'))
             titleElement.textContent = `*${title}`;
+        setModified(true);
     }
+});
+
+ipcRenderer.on('file:saved', (event, filepath) => {
+    setFile(filepath);
+});
+
+ipcRenderer.on('file:open', (event, filepath, content) => {
+    setFile(filepath);
+    editorElement.textContent = content;
 });

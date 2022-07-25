@@ -1,6 +1,8 @@
 const path = require('path');
 
-const { BrowserWindow } = require('electron');
+const { BrowserWindow, dialog } = require('electron');
+
+const { saveFileHandler } = require('./operations');
 
 const createWindow = (windows, menuOption) => {
     let newWindow = new BrowserWindow({
@@ -14,6 +16,39 @@ const createWindow = (windows, menuOption) => {
     });
 
     newWindow.loadURL(path.resolve(path.resolve(__dirname, '..'), 'window.html'));
+
+    newWindow.on('close', (event) => {
+        event.preventDefault();
+        
+        newWindow.webContents.executeJavaScript('sessionStorage.getItem("modified")', true).then(modified => {
+            if (modified) {
+                newWindow.webContents.executeJavaScript('sessionStorage.getItem("filepath")', true).then(filepath => {
+                    let title = filepath ?? 'Untitled';
+
+                    dialog.showMessageBox(newWindow, {
+                        type: 'none',
+                        buttons: ['Save', "Don't Save", 'Cancel'],
+                        defaultId: 0,
+                        title: 'Notepad',
+                        message: `Do you want to save changes to ${title}?`,
+                        cancelId: 2,
+                        noLink: true
+                    }).then(result => {
+                        console.log(result);
+                        if (result.response === 0) {
+                            saveFileHandler(newWindow, false);
+                        } else if (result.response === 1) {
+                            newWindow.destroy();
+                        }
+                    }).catch(err => {
+                        console.log(err);
+                    });
+                });
+            } else {
+                newWindow.close();
+            }
+        });
+    });
 
     newWindow.on('closed', () => {
         windows.delete(newWindow);

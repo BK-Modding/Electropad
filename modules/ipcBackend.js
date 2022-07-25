@@ -2,8 +2,9 @@ const fs = require('fs');
 
 const { ipcMain } = require('electron');
 
-ipcMain.on('get-filename', (event, args) => {
-	console.log("Args coming", args);
+const { nameFromPath } = require('./operations');
 
-    event.returnValue = 'nameo';
+ipcMain.handle('file:name', async (event, filepath) => {
+    const filename = nameFromPath(filepath);
+    return filename;
 });
