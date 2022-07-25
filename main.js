@@ -2,7 +2,8 @@ const path = require('path');
 
 const { app, globalShortcut } = require('electron');
 
-const { createWindow } = require('./modules/operations')
+const { createWindow } = require('./modules/browser');
+require('./modules/ipcBackend');
 
 // SET ENV
 process.env.NODE_ENV = 'development';
