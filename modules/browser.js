@@ -2,7 +2,7 @@ const path = require('path');
 
 const { BrowserWindow, dialog } = require('electron');
 
-const { saveFileHandler, saveChangesPrompt } = require('./operations');
+const { closeFileHandler } = require('./operations');
 
 const createWindow = (windows, menuOption) => {
     let newWindow = new BrowserWindow({
@@ -19,39 +19,7 @@ const createWindow = (windows, menuOption) => {
 
     newWindow.on('close', (event) => {
         event.preventDefault();
-        
-        saveChangesPrompt(newWindow, () => {
-            newWindow.destroy();
-        });
-        // newWindow.webContents.executeJavaScript('sessionStorage.getItem("modified")', true).then(modified => {
-        //     if (modified) {
-        //         newWindow.webContents.executeJavaScript('sessionStorage.getItem("filepath")', true).then(filepath => {
-        //             let title = filepath ?? 'Untitled';
-
-        //             dialog.showMessageBox(newWindow, {
-        //                 type: 'none',
-        //                 buttons: ['Save', "Don't Save", 'Cancel'],
-        //                 defaultId: 0,
-        //                 title: 'Notepad',
-        //                 message: `Do you want to save changes to ${title}?`,
-        //                 cancelId: 2,
-        //                 noLink: true
-        //             }).then(result => {
-        //                 if (result.response === 0) {
-        //                     saveFileHandler(newWindow, false).then(() => {
-        //                         newWindow.destroy();
-        //                     });
-        //                 } else if (result.response === 1) {
-        //                     newWindow.destroy();
-        //                 }
-        //             }).catch(err => {
-        //                 console.log(err);
-        //             });
-        //         });
-        //     } else {
-        //         newWindow.close();
-        //     }
-        // });
+        closeFileHandler(newWindow);
     });
 
     newWindow.on('closed', () => {

@@ -4,7 +4,7 @@ const fs = require('fs');
 const { Menu, dialog } = require('electron');
 
 const { createWindow } = require('./browser');
-const { openFileHandler, saveFileHandler } = require('./operations');
+const { newHandler, openFileHandler, saveFileHandler } = require('./operations');
 
 const generateMainMenu = (windows) => {
     const mainMenuTemplate = [
@@ -14,6 +14,9 @@ const generateMainMenu = (windows) => {
                 {
                     label: 'New',
                     accelerator: 'CommandOrControl+N',
+                    click(menuItem, currentWindow) {
+                        newHandler(currentWindow);
+                    }
                 },
                 {
                     label: 'New Window',
