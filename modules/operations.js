@@ -184,7 +184,7 @@ const saveFileHandler = (currentWindow, saveAsFlag) => {
 const closeFileHandler = (currentWindow) => {
     return saveChangesHandler(currentWindow).then(status => {
         if (["not modified", "saved", "don't save"].includes(status))
-            newWindow.destroy();
+            currentWindow.destroy();
     });
 }
 
