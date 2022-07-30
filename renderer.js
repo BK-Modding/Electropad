@@ -1,106 +1,95 @@
-const { ipcRenderer, session } = require('electron');
+const { ipcRenderer } = require('electron');
 
 let titleElement = document.getElementById('filename');
 let editorElement = document.getElementById('editor');
 
-let savedEditorContents;
-let modified;
-let fileinfo;
+let fileInfo = null;
+let backendFilters = ['editorContents'];
 
-function fileInfoObject(filename, filepath, modified) {
-    this.filename = filename ? filename : 'Untitled';
-    this.filepath = filepath;
-    this.modified = modified ? modified : false;
-
-    this.title = () => `${this.filename} - Notepad`
-
-    // this.formatFilename = (filename) => `${filename} - Notepad`;
-
-    this.getFilename = () => this.filename
-
-    this.setFilename = (filepath) => {
-        return ipcRenderer.invoke('file:name', filepath).then(filename => {
-            this.filename = fileName;
-            titleElement.textContent = formatTitle(filename);
-            sessionStorage.setItem('filepath', filepath);
-        });
-    }
-
-    this.getFilepath = () => this.filepath
-
-    this.setFilepath = (filepath) => {
-        this.filepath = filepath;
-    }
-
-    this.getModified = () => this.modified
-
-    this.setModified = (state) => {
-        this.modified = state;
-    }
-}
-
-const formatTitle = (filename) => `${filename} - Notepad`;
-
-const setModified = (value) => {
-    sessionStorage.setItem("modified", value);
-}
-
-const setEditorContents = (content) => {
-    editorElement.value = content;
-    savedEditorContents = content;
-}
-
-function loadFile(fileinfo) {
-    if (!fileinfo) {
-        fileinfo = new fileInfoObject()
-    }
-}
-
-function setFile(filepath) {
+function getFilename (filepath) {
     if (!filepath) {
-        titleElement.textContent = formatTitle('Untitled');
-        if (sessionStorage.getItem('filepath'))
-            sessionStorage.removeItem('filepath');
+        return new Promise((resolve, reject) => { // Returning immediately resolved promise to standardize this function's interface
+            resolve('Untitled');
+        });
     } else {
-        ipcRenderer.invoke('file:name', filepath).then(filename => {
-            titleElement.textContent = formatTitle(filename);
-            sessionStorage.setItem('filepath', filepath);
+        return ipcRenderer.invoke('file:name', filepath).then(filename => {
+            return filename;
         });
     }
+}
 
-    setModified(false);
+function fileInfoObject(filepath, editorContents) {
+    if (filepath) {
+        this.filepath = filepath;
+        this.untitled = false;
+    } else {
+        this.untitled = true;
+    }
+
+    this.editorContents = editorContents ? editorContents : '';
+
+    this.getEditorContents = () => this.editorContents;
+
+    this.getProperties = () => {
+        return Object.keys(this)
+        .filter(key => typeof this[key] !== 'function') // don't send method properties as they can't be serialized
+        .filter(key => !backendFilters.includes(key)) // don't send certain properties to backend due to size/security reasons
+        .map(key => [key, this[key]]);
+    }
+
+    this.isModified = () => editorElement.value !== this.editorContents;
+}
+
+function updateUI() {
+    editorElement.value = fileInfo.getEditorContents();
+
+    getFilename(fileInfo.filepath).then(filename => {
+        titleElement.textContent = `${filename} - Notepad`;
+    });
+}
+
+function loadFile(filedata) {
+    if (fileInfo)
+        fileInfo = null;
+
+    if (!filedata) {
+        fileInfo = new fileInfoObject();
+    } else {
+        fileInfo = new fileInfoObject(filedata.filepath, filedata.content);
+    }
+    updateUI();
 }
 
 document.addEventListener('DOMContentLoaded', (event) => {
-    setFile();
-    setEditorContents("");
+    loadFile({});
 });
 
 editorElement.addEventListener('input', (event) => {
-    const title = titleElement.textContent;
-
-    if (editorElement.value === savedEditorContents) {
-        if (title.startsWith('*')) 
-            titleElement.textContent = title.split('*')[1];
-        setModified(false);
-    } else {
-        if (!title.startsWith('*'))
-            titleElement.textContent = `*${title}`;
-        setModified(true);
+    if (fileInfo) {
+        if (fileInfo.isModified()) {
+            if (!titleElement.textContent.startsWith('*'))
+                titleElement.textContent = `*${titleElement.textContent}`;
+        } else {
+            if (titleElement.textContent.startsWith('*')) 
+                titleElement.textContent = titleElement.textContent.split('*')[1];
+        }
     }
 });
 
 ipcRenderer.on('file:new', (event) => {
-    setFile();
-    setEditorContents("");
+    loadFile({});
 });
 
 ipcRenderer.on('file:saved', (event, filepath) => {
-    setFile(filepath);
-    setEditorContents(editorElement.value);
+    loadFile({
+        filepath,
+        content: editorElement.value
+    });
 });
 
 ipcRenderer.on('file:open', (event, filepath, content) => {
-    setFile(filepath);
-    setEditorContents(content);
+    loadFile({
+        filepath,
+        content
+    });
 });

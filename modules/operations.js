@@ -12,31 +12,27 @@ const nameFromPath = (filepath) => {
     return path.basename(filepath, path.extname(filepath))
 }
 
-const getFilePath = (currentWindow) => {
-    currentWindow.webContents.executeJavaScript('savedEditorContents', true).then(content => {
-        console.log("content", content);
-    });
-    
-    return currentWindow.webContents.executeJavaScript('sessionStorage.getItem("filepath")', true).then(filepath => {
-        return filepath;
-    });
+const getFileInfo = (currentWindow) => {
+    return currentWindow.webContents.executeJavaScript('fileInfo.getProperties()', true).then(fileInfoList => {
+        return Object.fromEntries(fileInfoList);
+    })
 }
 
-const getEditorContent = (currentWindow) => {
-    return currentWindow.webContents.executeJavaScript('document.getElementById("editor").value', true).then(content => {
+const getEditorContents = (currentWindow) => {
+    return currentWindow.webContents.executeJavaScript('fileInfo.getEditorContents()', true).then(content => {
         return content;
     });
 }
 
-const getModified = (currentWindow) => {
-    return currentWindow.webContents.executeJavaScript('sessionStorage.getItem("modified")', true).then(modified => {
-        return modified === 'true';
+const getFileModified = (currentWindow) => {
+    return currentWindow.webContents.executeJavaScript('fileInfo.isModified()', true).then(modified => {
+        return modified;
     });
 }
 
 const saveChangesPrompt = (currentWindow) => {
-    return getFilePath(currentWindow).then(filepath => {
-        let title = filepath ?? 'Untitled';
+    return getFileInfo(currentWindow).then((fileInfo) => {
+        let title = fileInfo.untitled ? 'Untitled' : fileInfo.filepath;
 
         return dialog.showMessageBox(currentWindow, {
             type: 'none',
@@ -58,27 +54,24 @@ const saveChangesPrompt = (currentWindow) => {
             }
         }).catch(err => {
             console.log(err);
+            throw err;
         });
     });
 }
 
 const saveChangesHandler = (currentWindow) => {
-    return getModified(currentWindow).then(modified => {
+    return getFileModified(currentWindow).then(modified => {
         if (!modified) {
-            return true;
+            return "not modified";
         } else {
-            return saveChangesPrompt(currentWindow).then(result => {
-                if (result === "saved" || result === "don't save") {
-                    return true;
-                }
-            });
+            return saveChangesPrompt(currentWindow);
         }
     });
 }
 
 const newHandler = (currentWindow) => {
     return saveChangesHandler(currentWindow).then(status => {
-        if (status) {
+        if (["not modified", "saved", "don't save"].includes(status)) {
             console.log("New!");
             currentWindow.webContents.send('file:new');
 
@@ -116,16 +109,17 @@ const openFileDialog = (currentWindow, previouslySavedPath) => {
         }
     }).catch(err => {
         console.log(err);
+        throw err;
     });
 }
 
 const openFileHandler = (currentWindow) => {
     return saveChangesHandler(currentWindow).then(status => {
-        if (status) {
-            return getFilePath(currentWindow).then(filepath => {
+        if (["not modified", "saved", "don't save"].includes(status)) {
+            return getFileInfo(currentWindow).then(fileInfo => {
                 // return filepath ? openFileDialog(currentWindow, filepath) : openFileDialog(currentWindow);
-                if (filepath) {
-                    return openFileDialog(currentWindow, filepath);
+                if (!fileInfo.untitled) {
+                    return openFileDialog(currentWindow, fileInfo.filepath);
                 } else {
                     return openFileDialog(currentWindow);
                 }
@@ -135,7 +129,7 @@ const openFileHandler = (currentWindow) => {
 }
 
 const saveFile = (currentWindow, savedPath) => {
-    return getEditorContent(currentWindow).then(content => {
+    return getEditorContents(currentWindow).then(content => {
         return new Promise((resolve, reject) => {
             fs.writeFile(savedPath, content, (err) => {
                 if (err) reject(err);
@@ -164,22 +158,24 @@ const saveAsDialog = (currentWindow, previouslySavedPath) => {
         }
     }).catch(err => {
         console.log(err);
+        throw err;
     });
 }
 
 const saveFileHandler = (currentWindow, saveAsFlag) => {
-    return getFilePath(currentWindow).then(filepath => {
-        if (filepath) { // file loaded
+    return getFileInfo(currentWindow).then(fileInfo => {
+        console.log(fileInfo);
+        if (!fileInfo.untitled) { // file loaded so fileInfo.filepath exists
             if (saveAsFlag) {
-                return saveAsDialog(currentWindow, filepath);
+                return saveAsDialog(currentWindow, fileInfo.filepath);
             } else {
-                return getModified(currentWindow).then(modified => {
+                return getFileModified(currentWindow).then(modified => {
                     if (modified) {
-                        return saveFile(currentWindow, filepath);
+                        return saveFile(currentWindow, fileInfo.filepath);
                     }
                 });
             }
-        } else {
+        } else { // file not loaded so no difference between save and save as
             return saveAsDialog(currentWindow);
         }
     });
@@ -187,7 +183,7 @@ const saveFileHandler = (currentWindow, saveAsFlag) => {
 
 const closeFileHandler = (currentWindow) => {
     return saveChangesHandler(currentWindow).then(status => {
-        if (status)
+        if (["not modified", "saved", "don't save"].includes(status))
             newWindow.destroy();
     });
 }
